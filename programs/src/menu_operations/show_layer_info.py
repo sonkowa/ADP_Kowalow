@@ -16,21 +16,21 @@ def show_layer_info():
             f"Liczba obiektów: {len(data)}\n"
             f"Liczba kolumn: {len(data.columns)}\n"
             f"Typ geometrii: {', '.join(data.geom_type.unique())}\n"
-            f"Układ współrzędnych: {data.crs}"
+            f"Układ współrzędnych: EPSG{data.crs}"
     )
 
     elif layer.kind == "raster":
-        with rio.open(layer.data) as dataset:
+        with rio.open(layer.data) as data:
             info = (
                 f"Typ warstwy: rastrowa\n"
                 f"Wymiary (szer. × wys.): "
-                f"{dataset.width} × {dataset.height}\n"
-                f"Liczba pasm: {dataset.count}\n"
-                f"Typ danych: {', '.join(dataset.dtypes)}\n"
-                f"Układ współrzędnych: {dataset.crs}\n"
-                f"Rozdzielczość: {dataset.res}\n"
-                f"Zasięg: {dataset.bounds}",
-                f"Metadane: {dataset.tags()}"
+                f"{data.width} × {data.height}\n"
+                f"Liczba pasm: {data.count}\n"
+                f"Typ danych: {', '.join(dict.fromkeys(data.dtypes))}\n"
+                f"Układ współrzędnych: {data.crs}\n"
+                f"Rozdzielczość: {data.res}\n"
+                f"Zasięg: {data.bounds}",
+                f"Metadane: {data.tags()}"
             )
     else:
         messagebox.showwarning(

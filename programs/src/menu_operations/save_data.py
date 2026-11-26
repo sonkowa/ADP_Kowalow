@@ -4,6 +4,62 @@ from tkinter import filedialog, messagebox
 from src.data_service import get_layer
 
 
+
+def save_raster(layer):
+    output_path = filedialog.asksaveasfilename(
+        title="Zapisz warstwę rastrową",
+        defaultextension=".tif",
+        filetypes=[("GeoTIFF", "*.tif *.tiff")],
+    )
+
+    if not output_path:
+        return
+    try:
+        with rio.open(layer.path) as source:
+            pixels = source.read()
+            profile = (
+                layer.profile.copy()
+                if layer.profile is not None
+                else source.profile.copy()
+            )
+            tags = source.tags()
+            band_tags = [
+                source.tags(index)
+                for index in range(1, source.count + 1)
+            ]
+
+            profile.update(
+                driver="GTiff",
+                width=source.width,
+                height=source.height,
+                count=source.count,
+                crs=source.crs,
+                transform=source.transform,
+            )
+
+        with rio.open(output_path, "w", **profile) as destination:
+            destination.write(pixels)
+            destination.update_tags(**tags)
+
+            for index, tags_for_band in enumerate(band_tags, start=1):
+                if tags_for_band:
+                    destination.update_tags(index, **tags_for_band)
+
+    except Exception as error:
+        messagebox.showwarning(
+            "Błąd zapisu",
+            f"Nie udało się zapisać warstwy:\n{error}",
+        )
+        return
+
+    messagebox.showinfo(
+        "Zapisano plik",
+        "Warstwa została zapisana poprawnie",
+    )
+
+
+
+
 def save_data():
     layer = get_layer()
 
@@ -11,39 +67,9 @@ def save_data():
         return
 
     if layer.kind == "raster":
-        path = filedialog.asksaveasfilename(
-            title="Zapisz raster",
-            defaultextension=".tif",
-            filetypes=[("GeoTIFF", "*.tif *.tiff")],
-        )
-        if not path:
-            return
-        try:
-            with rio.open(layer.data) as source:
-                profile = (
-                    layer.profile.copy()
-                    if layer.profile is not None
-                    else source.profile.copy()
-                )
-                profile.update(driver="GTiff")
-
-            with rio.open(path, "w", **profile) as destination:
-                destination.write(source.read())
-                destination.update_tags(**source.tags())
-
-                for band_index in range(1, source.count + 1):
-                    destination.update_tags(
-                        band_index,
-                        **source.tags(band_index),
-                    )
+        save_raster(layer)
+        return
     
-        except Exception as error:
-            messagebox.showwarning(
-                "Błąd zapisu",
-                f"Nie udało się zapisać rastra:\n{error}",
-            )
-            return
-
     elif layer.kind == "vector":
         path = filedialog.asksaveasfilename(
             title="Zapisz warstwę wektorową",
