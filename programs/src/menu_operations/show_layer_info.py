@@ -16,7 +16,7 @@ def show_layer_info():
             f"Liczba obiektów: {len(data)}\n"
             f"Liczba kolumn: {len(data.columns)}\n"
             f"Typ geometrii: {', '.join(data.geom_type.unique())}\n"
-            f"Układ współrzędnych: EPSG{data.crs}"
+            f"Układ współrzędnych: {data.crs}"
     )
 
     elif layer.kind == "raster":
