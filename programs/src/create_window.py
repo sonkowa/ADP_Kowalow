@@ -34,9 +34,9 @@ def create_window():
 
     # Tytuł programu:
     canvas.create_text(
-        200,
+        300,
         50,
-        text="GeoTools",
+        text="GeoMine",
         font=("Arial", 30, "bold"),
         fill="white"
     )
@@ -46,7 +46,7 @@ def create_window():
 
     canvas.create_text(
         180,
-        280,
+        320,
         text="Wybierz operację:",
         font=("Arial", 12, "normal"),
         fill="black"

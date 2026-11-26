@@ -1,3 +1,4 @@
+import rasterio as rio
 from tkinter import filedialog, messagebox
 
 from src.data_service import get_layer
@@ -9,33 +10,68 @@ def save_data():
     if layer is None:
         return
 
-    path = filedialog.asksaveasfilename(
-        title="Zapisz warstwę",
-        defaultextension=".geojson",
-        filetypes=[
-            ("GeoJSON", "*.geojson"),
-            ("GeoPackage", "*.gpkg"),
-            ("Shapefile", "*.shp"),
-            ("CSV", "*.csv")
-        ]
-    )
+    if layer.kind == "raster":
+        path = filedialog.asksaveasfilename(
+            title="Zapisz raster",
+            defaultextension=".tif",
+            filetypes=[("GeoTIFF", "*.tif *.tiff")],
+        )
+        if not path:
+            return
+        try:
+            with rio.open(layer.data) as source:
+                profile = (
+                    layer.profile.copy()
+                    if layer.profile is not None
+                    else source.profile.copy()
+                )
+                profile.update(driver="GTiff")
 
-    if not path:
-        return
+            with rio.open(path, "w", **profile) as destination:
+                destination.write(source.read())
+                destination.update_tags(**source.tags())
 
-    try:
-        if path.endswith(".csv"):
-            layer.to_csv(path, index=False)
-        else:
-            layer.to_file(path)
+                for band_index in range(1, source.count + 1):
+                    destination.update_tags(
+                        band_index,
+                        **source.tags(band_index),
+                    )
+    
+        except Exception as error:
+            messagebox.showwarning(
+                "Błąd zapisu",
+                f"Nie udało się zapisać rastra:\n{error}",
+            )
+            return
 
-        messagebox.showinfo(
-            "Zapisano plik",
-            "Warstwa została zapisana poprawnie."
+    elif layer.kind == "vector":
+        path = filedialog.asksaveasfilename(
+            title="Zapisz warstwę wektorową",
+            defaultextension=".geojson",
+            filetypes=[
+                ("GeoJSON", "*.geojson"),
+                ("GeoPackage", "*.gpkg"),
+                ("Shapefile", "*.shp"),
+                ("CSV", "*.csv"),
+            ],
         )
 
-    except Exception:
-        messagebox.showwarning(
-            "Błąd zapisu",
-            "Nie udało się zapisać warstwy."
-        )
+        if not path:
+            return
+        try:
+                if path.endswith(".csv"):
+                    layer.to_csv(path, index=False)
+                else:
+                    layer.to_file(path)
+        
+                messagebox.showinfo(
+                    "Zapisano plik",
+                    "Warstwa została zapisana poprawnie."
+                )
+
+        except Exception:
+            messagebox.showwarning(
+                "Błąd zapisu",
+                "Nie udało się zapisać warstwy."
+            )
+        messagebox.showinfo("Zapisano plik", "Warstwa została zapisana poprawnie.")
